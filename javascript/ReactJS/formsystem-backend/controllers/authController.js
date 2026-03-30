@@ -10,17 +10,19 @@ const transporter = nodemailer.createTransport({
     port: process.env.EMAIL_PORT,
     secure: process.env.EMAIL_SECURE === 'true',
     auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: `${process.env.EMAIL_USER}`,
+        pass: `${process.env.EMAIL_PASSWORD}`
     }
 });
+
+
 
 //Generate JWT Token
 const generateToken = (userId) => {
     return jwt.sign({
         id: userId
     },process.env.JWT_SECRET, {
-        expiresIn: process.env.JWT_EXPIRES_IN
+        expiresIn:3600
     });
 }
 
@@ -78,7 +80,7 @@ exports.register = async (req, res) => {
         console.error('Error during Registration:', err);
         res.status(500).json({
             success: false,
-            message: 'Server Error'
+            message: err.message
         });
     }
 }
@@ -146,6 +148,7 @@ exports.login = async (req, res) => {
 //@access Public
 exports.forgotPassword = async (req, res) => {
     try{
+        console.log(req.body)
         const { email } = req.body;
 
         if(!email){
@@ -169,8 +172,8 @@ exports.forgotPassword = async (req, res) => {
         const user = users[0];
         const resetToken = crypto.randomBytes(20).toString('hex');
         const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-        const tokenExpiry = Date.now() + 3600000; // 1 hour
-
+        const tokenExpiry = new Date(Date.now() + 3600000); // 1 hour
+        
         await db.query(
             'UPDATE users SET reset_token = ?, reset_token_expiry = ? WHERE id = ?',
             [hashedToken, tokenExpiry, user.id]
